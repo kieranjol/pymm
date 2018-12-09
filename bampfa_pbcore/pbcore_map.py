@@ -265,20 +265,289 @@ PBCORE_MAP = {
 			"TEXT":"value"
 		}
 	},
+	"nameSubjects":{
+		"pbcoreSubject":{
+			"LEVEL":"WORK",
+			"ATTRIBUTES":{
+				"subjectType":"entity",
+			},
+			"TEXT":"value"
+		}
+	},
+	"tags":{
+		"pbcoreSubject":{
+			"LEVEL":"WORK",
+			"ATTRIBUTES":{
+				"subjectType":"keyword",
+			},
+			"TEXT":"value"
+		}
+	},
+	"eventSeries":{
+		"pbcoreRelation":{
+			"LEVEL":"WORK",
+			"TEXT":"",
+			"SUBELEMENTS":{
+				"pbcoreRelationType":{
+					"TEXT":"Event Series"
+				},
+				"pbcoreRelationIdentifier":{
+					"TEXT":"value"
+				}
+			}
+		}
+	},
+	"eventRelatedExhibition":{
+		"pbcoreRelation":{
+			"LEVEL":"WORK",
+			"TEXT":"",
+			"SUBELEMENTS":{
+				"pbcoreRelationType":{
+					"TEXT":"Related exhibition"
+				},
+				"pbcoreRelationIdentifier":{
+					"TEXT":"value"
+				}
+			}
+		}
+	},
+	"description":{
+		"pbcoreDescription":{
+			"LEVEL":"WORK",
+			"ATTRIBUTES":{
+				"descriptionType":"summary",
+			},
+			"TEXT":"value"
+		}
+	},
+	"eventOrganizer":{
+		"pbcoreContributor":{
+			"LEVEL":"WORK",
+			"TEXT":"",
+			"SUBELEMENTS":{
+				"contributor":{
+					"TEXT":"value"
+				},
+				"contributorRole":{
+					"ATTRIBUTES":{
+						"source":"BAMPFA vocabulary"
+					},
+					"TEXT":"Event organizer"
+				}
+			}
+		}
+	},
+	"copyrightStatement":{
+		"pbcoreRightsSummary":{
+			"LEVEL":"WORK",
+			"TEXT":"",
+			"SUBELEMENTS":{
+				"rightsSummary":{
+					"ATTRIBUTES":{
+						"annotation":"Statement of copyright details."
+					},
+					"TEXT":"value"
+				}
+			}
+		}
+	},
+	"restrictionsOnUse":{
+		"pbcoreRightsSummary":{
+			"LEVEL":"WORK",
+			"TEXT":"",
+			"SUBELEMENTS":{
+				"rightsSummary":{
+					"ATTRIBUTES":{
+						"annotation":"Restrictions on use/reuse of work."
+					},
+					"TEXT":"value"
+				}
+			}
+		}
+	},
+	"frameRateTRTdetails":{
+		"essenceTrackFrameRate":{
+			"LEVEL":"INSTANTIATION",
+			"ATTRIBUTES":{
+				"unitsOfMeasure":"fps"
+			},
+			"TEXT":"value",
+			"TRACK":"Video"
+		}
+	},
+	"platformOutlet":{
+		"pbcoreAnnotation":{
+			"LEVEL":"WORK",
+			"ATTRIBUTES":{
+				"annotationType":"Platform or media outlet for asset."
+			},
+			"TEXT":"value"
+		}
+	},
+	"editSequenceSettings":{
+		"essenceTrackAspectRatio":{
+			"LEVEL":"INSTANTIATION",
+			"ATTRIBUTES":{
+				"annotation":"Sequence aspect ratio settings from NLE software."
+			},
+			"TEXT":"value",
+			"TRACK":"Video"
+		}
+	},
+	"additionalCredits":{
+		"pbcoreContributor":{
+			"LEVEL":"WORK",
+			"TEXT":"",
+			"SUBELEMENTS":{
+				"contributor":{
+					"ATTRIBUTES":{
+						"annotation":"Additional credits statement."
+					},
+					"TEXT":"value"
+				}
+			}
+		}
+	},
+	"postProcessing":{
+		"instantiationGenerations":{
+			"LEVEL":"INSTANTIATION",
+			"ATTRIBUTES":{
+				"source":"BAMPFA controlled vocabulary",
+				"annotation":"Indicates raw footage or processed footage. Values: 'Raw','Post-processed'"
+			},
+			"TEXT":"value"
+		}
+	},
+	"exportPublishDate":{
+		"instantiationDate":{
+			"LEVEL":"INSTANTIATION",
+			"ATTRIBUTES":{
+				"dateType":"Published",
+				"annotation":"Date an asset was made publicly available."
+			},
+			"TEXT":"value"
+		}
+	},
+	"PFAfilmSeries":{
+		"pbcoreRelation":{
+			"LEVEL":"WORK",
+			"TEXT":"",
+			"SUBELEMENTS":{
+				"pbcoreRelationType":{
+					"TEXT":"Related PFA film series"
+				},
+				"pbcoreRelationIdentifier":{
+					"TEXT":"value"
+				}
+			}
+		}
+	},
+	"recordingDate":{
+		"pbcoreAssetDate":{
+			"LEVEL":"WORK",
+			"ATTRIBUTES":{
+				"dateType":"Date of recording"
+			},
+			"TEXT":"value"
+		}
+	},
+	"digitizedBornDigital":{
+		"instantiationGenerations":{
+			"LEVEL":"INSTANTIATION",
+			"ATTRIBUTES":{
+				"source":"BAMPFA controlled vocabulary",
+				"annotation":"Indicates if an asset was digitized or born digital. Values: 'Digitized','Born-digital'"
+			},
+			"TEXT":"value"
+		}
+	},
+	"digitizer":{
+		"instantiationAnnotation":{
+			"LEVEL":"INSTANTIATION",
+			"ATTRIBUTES":{
+				"annotation":"Person or vendor responsible for digitization."
+			},
+			"TEXT":"value"
+		}
+	},
+	"locationOfRecording":{
+		"pbcoreCoverage":{
+			"LEVEL":"WORK",
+			"TEXT":"",
+			"SUBELEMENTS":{
+				"coverage":{
+					"ATTRIBUTES":{
+						"annotation":"Location that a recording was made."
+					},
+					"TEXT":"value"
+				},
+				"coverageType":{
+					"ATTRIBUTES":{
+						"ref":"http://metadataregistry.org/concept/show/id/2522.html"
+					},
+					"TEXT":"Spatial"
+				}
+			}
+		}
+	},
+	"speakerInterviewee":{
+		"pbcoreCreator":{
+			"LEVEL":"WORK",
+			"TEXT":"",
+			"SUBELEMENTS":{
+				"creator":{
+					"TEXT":"value"
+				},
+				"creatorRole":{
+					"ATTRIBUTES":{
+						"source":"PBCore creatorRole/contributorRole",
+						"ref":"http://metadataregistry.org/concept/show/id/9654.html"
+					},
+					"TEXT":"Speaker"
+				}
+			}
+		}
+	},
+	"filmTitleSubjects":{
+		"pbcoreSubject":{
+			"LEVEL":"WORK",
+			"ATTRIBUTES":{
+				"subjectType":"Film titles as subjects"
+			},
+			"TEXT":"value"
+		}
+	},
+	"topicalSubjects":{
+		"pbcoreSubject":{
+			"LEVEL":"WORK",
+			"ATTRIBUTES":{
+				"subjectType":"topic"
+			},
+			"TEXT":"value"
+		}
+	},
 	"BAMPFA_FIELD":{
 		"PBCORE_ELEMENT":{
 			"LEVEL":"WORK_OR_INSTANTIATION",
-			"ATTRIBUTE":"DEFAULT_VALUE",
+			"ATTRIBUTES":{
+				"ATTRIBUTE":"DEFAULT_VALUE"
+			},
 			"TEXT":"Null",
+			"TRACK":"Video or Audio or Delete",
 			"SUBELEMENTS":{
 				"PBCORE_FIELD":{
-					"ATTRIBUTE":"DEFAULT_VALUE",
+					"ATTRIBUTES":{
+						"ATTRIBUTE":"DEFAULT_VALUE"
+					},
 					"TEXT":"Null"
 				}
 			},
 			"SIBLING_FIELD":{
 				"PBCORE_FIELD":{
-					"ATTRIBUTE":"DEFAULT_VALUE"
+					"ATTRIBUTES":{
+						"ATTRIBUTE":"DEFAULT_VALUE"
+					},
+					"TEXT":"Null"
 				}
 			}
 		}

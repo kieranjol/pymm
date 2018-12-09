@@ -16,7 +16,14 @@ from pymmconfig import pymmconfig
 #
 def set_args():
 	parser = argparse.ArgumentParser()
-	parser.add_argument('-m','--mode',choices=['database','user','check'],help='database mode creates a PREMIS database from scratch; user mode adds a user to an existing db')
+	parser.add_argument(
+		'-m','--mode',
+		choices=['database','user','check'],
+		help=(
+			'database mode creates a PREMIS database from scratch; '
+			'user mode adds a user to an existing db'
+			)
+		)
 	return parser.parse_args()
 #
 #
@@ -24,9 +31,11 @@ def set_args():
 
 config = pymmFunctions.read_config()
 pymm_db = config['database settings']['pymm_db']
-preexistingDB = pymm_db
 
-print("THIS SCRIPT CREATES A PYMM DATABASE, OR ADDS USERS TO ONE.\n\nRUN THIS ON THE PYMM DATABASE HOST MACHINE!!")
+print(
+	"THIS SCRIPT CREATES A PYMM DATABASE, OR ADDS USERS TO ONE.\n"
+	"\nRUN THIS ON THE PYMM DATABASE HOST MACHINE!!"
+	)
 
 def connect_to_mysql(user='root'):
 	try:
@@ -34,18 +43,20 @@ def connect_to_mysql(user='root'):
 		connection = connect.connect()
 		return connect
 	except:
-		print("you got some mysql connection issues, maybe the user doesn't exist?")
+		print("you got some mysql connection issues, "
+			"maybe the user doesn't exist?")
 		sys.exit()
 
 def check_db_exists(pymm_db=pymm_db):
 	if pymm_db == '':
-		print("There is no Pymm database set in the config file yet. Now exiting.")
+		print("There is no Pymm database set "
+			"in the config file yet. Now exiting.")
 		sys.exit()
-	query = "SHOW DATABASES;"
+	showDBs = "SHOW DATABASES"
 	connect = connect_to_mysql('root')
 	# connect = db.DB('root')
 	# connect.connect()
-	databases = connect.query(query,)
+	databases = connect.query(showDBs,)
 	dbExists = [item[0] for item in databases if pymm_db in item]
 	if dbExists:
 		print(pymm_db+" EXISTS!")
@@ -62,69 +73,75 @@ def create_db(pymm_db=pymm_db):
 	# check config file for existing db, ask for one if it doesn't exist
 	if pymm_db == '':
 		pymm_db = input("Please enter a name for the database: ")
-	# mysql.connector won't allow %s substitution for db name... ? use str.format() method instead
-	createDbSQL = "CREATE DATABASE IF NOT EXISTS {};".format(pymm_db)
+	# mysql.connector only allows parameterization for INSERT and SELECT
+	# use str.format() method instead
+	createDbSQL = "CREATE DATABASE IF NOT EXISTS {}".format(pymm_db)
 	# set 'use database' setting to True
 	pymmconfig.set_value("database settings",'use_db','y')
-	useDB = "USE {};".format(pymm_db)
+	useDB = "USE {}".format(pymm_db)
 	try:
 		connect = db.DB('root')
 		connect.connect()
 		cursor = connect.query(createDbSQL)
 		cursor = connect.close_cursor()
 	except:
-		print("Check your mysql settings and try again.")
+		print("Error: uh, error.. :(")
 		sys.exit()
 	
 	cursor = connect.query(useDB)
-	cursor = connect.close_cursor()
+	print(cursor)
 
-	createObjectTable =	('''CREATE TABLE object(\
-							objectIdentifierValueID bigint NOT NULL AUTO_INCREMENT,\
-							objectIdentifierValue varchar(1000) NOT NULL UNIQUE,\
+	createObjectTable =	('''CREATE TABLE IF NOT EXISTS object(\
+							objectIdentifierValueID BIGINT(20) NOT NULL AUTO_INCREMENT,\
+							objectIdentifierValue VARCHAR(1000) NOT NULL UNIQUE,\
+							objectCategory VARCHAR(30) NOT NULL,\
+							objectCategoryDetail VARCHAR(50) NOT NULL,\
 							objectDB_Insertion datetime NOT NULL DEFAULT NOW(),\
 							object_LastTouched datetime NOT NULL,\
 							PRIMARY KEY (objectIdentifierValueID)\
 							);\
 						''')
-	createEventTable = 	('''CREATE TABLE event (\
+	createEventTable = 	('''CREATE TABLE IF NOT EXISTS event (\
 							eventIdentifierValue BIGINT(20) NOT NULL AUTO_INCREMENT,\
+							objectIdentifierValueID BIGINT(20),\
 							objectIdentifierValue VARCHAR(1000),\
-							eventType varchar(100) NOT NULL,\
+							eventType VARCHAR(100) NOT NULL,\
 							eventDateTime datetime NOT NULL DEFAULT NOW(),\
-							eventDetail varchar(30) NOT NULL,\
-							eventOutcome varchar(30),\
-							eventDetailOPT varchar(1000),\
-							eventDetailCOMPNAME varchar(50) NOT NULL,\
-							linkingAgentIdentifierValue varchar(30) NOT NULL,\
+							eventOutcome VARCHAR(30) NOT NULL,\
+							eventOutcomeDetail VARCHAR(1000),\
+							eventDetailCallingFunc VARCHAR(1000),\
+							eventDetailCOMPUTER VARCHAR(50) NOT NULL,\
+							linkingAgentIdentifierValue VARCHAR(30) NOT NULL,\
 							PRIMARY KEY (eventIdentifierValue),\
-							FOREIGN KEY (objectIdentifierValue) REFERENCES object(objectIdentifierValue)\
+							FOREIGN KEY (objectIdentifierValueID) REFERENCES object(objectIdentifierValueID)\
 							);\
 						''')
-	createFixityTable =	('''CREATE TABLE fixity (\
-							fixityIdentifierValue bigint NOT NULL AUTO_INCREMENT,\
-							eventIdentifierValue bigint NOT NULL,\
-							objectIdentifierValue varchar(1000),\
-							eventDateTime datetime NOT NULL DEFAULT NOW(),\
-							eventDetail varchar(30) NOT NULL,\
-							messageDigestAlgorithm varchar (20) NOT NULL,\
-							messageDigestSOURCE varchar (1000),\
-							messageDigestPATH varchar (8000) NOT NULL,\
-							messageDigestFILENAME varchar (8000) NOT NULL,\
-							messageDigestHASH varchar (32) NOT NULL,\
+	# messageDigestSOURCE is optionally read from an objects_manifest
+	createFixityTable =	('''CREATE TABLE IF NOT EXISTS fixity (\
+							fixityIdentifierValue BIGINT NOT NULL AUTO_INCREMENT,\
+							eventIdentifierValue BIGINT(20) NOT NULL,\
+							objectIdentifierValueID BIGINT(20),\
+							objectIdentifierValue VARCHAR(1000),\
+							eventDateTime DATETIME NOT NULL DEFAULT NOW(),\
+							eventDetailCallingFunc VARCHAR(30) NOT NULL,\
+							messageDigestAlgorithm VARCHAR (20) NOT NULL,\
+							messageDigestFilepath VARCHAR (8000) NOT NULL,\
+							messageDigestHashValue VARCHAR (32) NOT NULL,\
+							messageDigestSOURCE VARCHAR (1000),\
 							PRIMARY KEY (fixityIdentifierValue),\
 							FOREIGN KEY (eventIdentifierValue) REFERENCES event(eventIdentifierValue),\
-							FOREIGN KEY (objectIdentifierValue) REFERENCES object(objectIdentifierValue)\
+							FOREIGN KEY (objectIdentifierValueID) REFERENCES object(objectIdentifierValueID)\
 							);\
-						''')							
-	createChecksumIndex = "CREATE INDEX checksums ON fixity (messageDigestHASH);"
-	createLTOschemaTable = 	('''CREATE TABLE ltoSchema (\
-								ltoSchemaValueID bigint NOT NULL AUTO_INCREMENT,\
-								ltoID varchar(10) NOT NULL,\
-								fileName varchar(200),\
-								filePath varchar(400),\
-								fileSize varchar(100),\
-								modifyTime varchar(40),\
+						''')
+
+	createChecksumIndex = "CREATE INDEX checksums ON fixity (messageDigestHashValue);"
+	createLTOschemaTable = 	('''CREATE TABLE IF NOT EXISTS ltoSchema (\
+								ltoSchemaValueID BIGINT NOT NULL AUTO_INCREMENT,\
+								ltoID VARCHAR(10) NOT NULL,\
+								fileName VARCHAR(200),\
+								filePath VARCHAR(400),\
+								fileSize VARCHAR(100),\
+								modifyTime VARCHAR(40),\
 								FULLTEXT (filePath),\
 								PRIMARY KEY (ltoSchemaValueID)\
 								);\
@@ -133,27 +150,29 @@ def create_db(pymm_db=pymm_db):
 	createLTOcolumnIndex = 	('''CREATE UNIQUE INDEX lto_column_index \
 								ON ltoSchema(ltoID,fileName,filePath,fileSize,modifyTime);\
 								''')
-	createObjectCharsTable = 	('''CREATE TABLE objectCharacteristics (\
-									objectCharacteristicValueID bigint NOT NULL AUTO_INCREMENT,\
-									objectIdentifierValue varchar(1000) NOT NULL UNIQUE,\
-									mediaInfo MEDIUMTEXT,\
-									captureLog TEXT,\
-									videoFingerprint MEDIUMTEXT,\
-									videoFingerprintSorted MEDIUMTEXT,\
+	createObjectCharsTable = 	('''CREATE TABLE IF NOT EXISTS objectCharacteristics (\
+									objectCharacteristicValueID BIGINT NOT NULL AUTO_INCREMENT,\
+									objectIdentifierValueID BIGINT(20) NOT NULL,\
+									objectIdentifierValue VARCHAR(1000),\
+									mediaInfo LONGTEXT,\
+									ingestLog LONGTEXT,\
+									pbcoreOutput LONGTEXT,\
+									pbcoreXML MEDIUMBLOB,\
 									PRIMARY KEY (objectCharacteristicValueID),\
-									FOREIGN KEY (objectIdentifierValue) REFERENCES object(objectIdentifierValue)\
+									FOREIGN KEY (objectIdentifierValueID) REFERENCES object(objectIdentifierValueID)\
 									);\
 								''')
-	createFingerprintsTable = 	('''CREATE TABLE fingerprints (\
-									hashNumber bigint NOT NULL AUTO_INCREMENT,\
-									objectIdentifierValue varchar(1000) NOT NULL,\
-									startframe varchar(100),\
-									endframe varchar(100),\
-									hash1 varchar(255),\
-									hash2 varchar(255),\
-									hash3 varchar(255),\
-									hash4 varchar(255),\
-									hash5 varchar(255),\
+	# THIS IS STRAIGHT FROM CUNY.... NOT SURE IF/HOW WE WILL USE IT.
+	createFingerprintsTable = 	('''CREATE TABLE IF NOT EXISTS fingerprints (\
+									hashNumber BIGINT NOT NULL AUTO_INCREMENT,\
+									objectIdentifierValue VARCHAR(1000) NOT NULL,\
+									startframe VARCHAR(100),\
+									endframe VARCHAR(100),\
+									hash1 VARCHAR(255),\
+									hash2 VARCHAR(255),\
+									hash3 VARCHAR(255),\
+									hash4 VARCHAR(255),\
+									hash5 VARCHAR(255),\
 									PRIMARY KEY (hashNumber),\
 									FOREIGN KEY (objectIdentifierValue) REFERENCES object(objectIdentifierValue)\
 									);\
@@ -164,19 +183,16 @@ def create_db(pymm_db=pymm_db):
 			createLTOschemaTable,createLTOidIndex,createLTOcolumnIndex,
 			createObjectCharsTable,createFingerprintsTable,createHashIndex]
 
-	if preexistingDB == '':
-		# skip table/index creation if db exists already...
-		if check_db_exists(pymm_db):
-			for sql in sqlToDo:
-				try:
-					cursor = connect.query(sql)
-					cursor = connect.close_cursor()
-				except:
-					print("mysql error... check your settings and try again.")
-					sys.exit()
-			pymmconfig.set_value("database settings",'pymm_db',pymm_db)
-	else:
-		print("Your database, "+pymm_db+" already exists, silly goose. We are done here. Goodnight.")
+	# preexistingDB = check_db_exists()
+	for sql in sqlToDo:
+		try:
+			cursor = connect.query(sql)
+			cursor = connect.close_cursor()
+		except:
+			print("mysql error... check your settings and try again.")
+			sys.exit()
+	pymmconfig.set_value("database settings",'pymm_db',pymm_db)
+
 	connect.close_connection()
 
 def create_user(pymm_db=pymm_db):
@@ -195,21 +211,22 @@ def create_user(pymm_db=pymm_db):
 		userIP = 'localhost'
 	createUserSQL = "CREATE USER IF NOT EXISTS %s@%s IDENTIFIED BY %s;"
 	grantPrivsSQL = "GRANT ALL PRIVILEGES ON {}.* TO %s@%s;".format(pymm_db)
-	print(createUserSQL)
-	print(grantPrivsSQL)
+	# print(createUserSQL)
+	# print(grantPrivsSQL)
 	try:
 		connect = db.DB('root')
 		connect.connect()
-		connect.query(createUserSQL,(newUser,userIP,userPass))
-		connect.query(grantPrivsSQL,(newUser,userIP))
+		connect.query(createUserSQL,newUser,userIP,userPass)
+		connect.query(grantPrivsSQL,newUser,userIP)
 		connect.close_cursor()
 		connect.close_connection()
-		print("\n\nIMPORTANT!!\nTO FINISH USER SETUP, TYPE THIS TERMINAL COMMAND ON THE ~USER'S~ COMPUTER:\n"
-			"mysql_config_editor set --login-path="+newUser+"_db_access --host="+userIP+" --user="+newUser+" --password=\n"
-			"\nAND THEN TYPE IN THE USER PASSWORD ("+userPass+")\n"
-			"AND ~THEN~ GO INTO THE USER'S LOCAL PYMMCONFIG AND ENTER THESE VALUES:\n"
-			"pymm_db_name = "+newUser+"_db_access\n"
-			"pymm_db = "+pymm_db+"\n")
+		# print("\n\nIMPORTANT!!\nTO FINISH USER SETUP, TYPE THIS TERMINAL COMMAND ON THE ~USER'S~ COMPUTER:\n"
+		# 	"mysql_config_editor set --login-path="+newUser+"_db_access --host="+userIP+" --user="+newUser+" --password=\n"
+		# 	"\nAND THEN TYPE IN THE USER PASSWORD ("+userPass+")\n"
+		# 	"AND ~THEN~ GO INTO THE USER'S LOCAL PYMMCONFIG AND ENTER THESE VALUES:\n"
+		# 	"pymm_db_name = "+newUser+"_db_access\n"
+		# 	"pymm_db = "+pymm_db+"\n")
+		pymmconfig.set_value("database users",newUser,userPass)
 	except:
 		print("stupid error")
 		sys.exit()

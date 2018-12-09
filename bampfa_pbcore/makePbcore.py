@@ -12,8 +12,7 @@ from . import pbcore
 
 def tidy(self):
 	'''
-	Should fix ordering if needed?
-	i.e. put the work-level stuff before the instantiation(s)
+	I need to make the order match the schema order.
 	'''
 	pass
 
@@ -26,20 +25,21 @@ def add_instantiation(self, pbcoreInstantiationPath, descriptiveJSONpath=None, l
 	`level` should refer to:
 	Preservation master, Access copy, Mezzanine
 	'''
-
+	# This parser declaration avoids XPath failure on special characters
+	parser = ET.XMLParser(recover=True)
 	try:
-		pbcoreInstantiation = ET.parse(pbcoreInstantiationPath)
+		pbcoreInstantiation = ET.parse(pbcoreInstantiationPath,parser=parser)
 		# print(pbcoreInstantiation)
 
 	except:
 		try:
-			# see if it's a bytes type object... 
-			pbcoreString = ET.fromstring(pbcoreInstantiationPath)
+			# see if it's a bytes type object...
+			pbcoreString = ET.fromstring(pbcoreInstantiationPath,parser=parser)
 			pbcoreInstantiation = ET.ElementTree(pbcoreString)
 		except:
 			print('not a valid xml input ... probably?')
 			sys.exit()
-	
+
 	instantiation = add_SubElement(
 		self,
 		self.descriptionRoot,
@@ -77,8 +77,8 @@ def add_element_to_instantiation(self,identifier,element,attributes={},text=None
 		targetInstantiationXpath,
 		namespaces=self.XPATH_NS_MAP
 		)
-	print(targetInstantiation)
-	print(attributes)
+	# print(targetInstantiation)
+	# print(attributes)
 	if targetInstantiation != []:
 		add_SubElement(
 			self,
@@ -157,7 +157,7 @@ def get_related_physical_ID(self, descriptiveJSONpath):
 				)
 			try:
 				_id = physicalAccNo[0]
-				print(_id)
+				# print(_id)
 			except:
 				_id = None
 
@@ -189,9 +189,9 @@ def add_SubElement(
 	**_extra
 	):
 	# e.g. >> sample.add_SubElement(
-	#							sample.descriptionRoot,
-	#							'pbcoreSub',{},'HELLO',
-	#							sample.NS_MAP)
+	#			 sample.descriptionRoot,
+	#			 'pbcoreSub',{},'HELLO',
+	#			 sample.NS_MAP)
 	result = ET.SubElement(_parent,_tag,attrib,nsmap)
 	result.text = _text
 	return result
@@ -219,7 +219,7 @@ def add_pbcore_subelements(self,top,mappedSubelements,mdValue):
 def add_physical_elements(self,descriptiveJSONpath):
 	'''
 	load metadata json file in specific format,
-	drawn from BAMPFA CMS:
+	drawn from BAMPFA CMS and user-input form:
 	{assetpath:{
 		metadata:{
 			field1:value1,
@@ -237,7 +237,7 @@ def add_physical_elements(self,descriptiveJSONpath):
 		nsmap=self.NS_MAP
 		)
 
-	comment = ET.Comment("Physical Asset")
+	comment = ET.Comment("Physical/Original Asset")
 	physicalInstantiation.insert(0,comment)
 	descriptiveJSON = json.load(open(descriptiveJSONpath))
 	# there should be only one asset
@@ -248,7 +248,7 @@ def add_physical_elements(self,descriptiveJSONpath):
 	metadata = descriptiveJSON[asset]['metadata']
 	descMetadataFields = []
 	for key,value in metadata.items():
-		if value != "":
+		if value not in ("",None,"None","null"):
 			# we only want the fieds with values
 			descMetadataFields.append(key)
 
@@ -263,38 +263,80 @@ def add_physical_elements(self,descriptiveJSONpath):
 			mappingTarget = list(mapping.keys())[0]
 			mappedPbcore = mapping[mappingTarget]
 			# check if the field applies to the 
-			# WORK or INSTANTIATION level
+			# `level` here should == WORK or INSTANTIATION
 			level = mappedPbcore["LEVEL"]
-			
+			if level == "WORK":
+				insertionTarget = self.descriptionRoot
+			elif level == "INSTANTIATION":
+				insertionTarget = physicalInstantiation
+
 			# set any attributes if applicable
 			if "ATTRIBUTES" in mappedPbcore:
 				mappingAttribs = mappedPbcore["ATTRIBUTES"]
 			else:
 				mappingAttribs = {}
-			
+
+			if "TRACK" in mappedPbcore:
+				# TRACK should equal 'Audio' or 'Video'
+				# see if any other fields have already been set 
+				# within an <instantiationEssenceTrack> tag, 
+				# or create one if need be.
+				track = mappedPbcore["TRACK"]
+				# XPATH to find an existing essence track
+				trackXpath = (
+					"//pbcoreInstantiation"\
+					"[comment()='Physical/Original Asset']/"\
+					"instantiationEssenceTrack["\
+					"essenceTrackType[text()='{}'"\
+					"]]".format(track)
+					)
+				print(trackXpath)
+				if track == "Video":
+					existingEssenceTrack = physicalInstantiation.xpath(
+						trackXpath,
+						namespaces=self.XPATH_NS_MAP
+						)
+					print(existingEssenceTrack)
+				elif track == 'Audio':
+					existingEssenceTrack = physicalInstantiation.xpath(
+						trackXpath,
+						namespaces=self.XPATH_NS_MAP
+						)
+				if existingEssenceTrack != []:
+					insertionTarget = existingEssenceTrack[0]
+				else:
+					# add an <instantiationEssenceTrack> tag
+					essenceTrack = add_SubElement(
+						self,
+						physicalInstantiation,
+						'instantiationEssenceTrack',
+						attrib={},
+						_text=None,
+						nsmap=self.NS_MAP
+					)
+					add_SubElement(
+						self,
+						essenceTrack,
+						'essenceTrackType',
+						attrib={},
+						_text=track,
+						nsmap=self.NS_MAP
+					)
+					insertionTarget = essenceTrack
+
 			if mappedPbcore["TEXT"] == "value":
 				'''
 				If there are no subfields involved, just write the 
 				value to the pbcore element.
 				'''
-				if level == "WORK":
-					add_SubElement(
-						self,
-						self.descriptionRoot,
-						mappingTarget,
-						attrib=mappingAttribs,
-						_text=mdValue,
-						nsmap=self.NS_MAP
-						)
-				else:
-					add_SubElement(
-						self,
-						physicalInstantiation,
-						mappingTarget,
-						attrib=mappingAttribs,
-						_text=mdValue,
-						nsmap=self.NS_MAP
-						)
+				add_SubElement(
+					self,
+					insertionTarget,
+					mappingTarget,
+					attrib=mappingAttribs,
+					_text=mdValue,
+					nsmap=self.NS_MAP
+					)
 
 			else:
 				'''
@@ -303,29 +345,22 @@ def add_physical_elements(self,descriptiveJSONpath):
 				'''
 				mappedSubelements = mappedPbcore["SUBELEMENTS"]
 
-				if level == "WORK":
-					top = add_SubElement(
-						self,
-						self.descriptionRoot,
-						mappingTarget,
-						attrib=mappingAttribs,
-						nsmap=self.NS_MAP
-						)
-					add_pbcore_subelements(self,top,mappedSubelements,mdValue)
-				else:
-					if not targetInstantiation == []:
-						top = add_SubElement(
-							self,
-							physicalInstantiation,
-							mappingTarget,
-							attrib=mappingAttribs,
-							nsmap=self.NS_MAP
-							)
-						add_pbcore_subelements(self,top,mappedSubelements,mdValue)
+				# if level == "WORK":
+				top = add_SubElement(
+					self,
+					insertionTarget,
+					mappingTarget,
+					attrib=mappingAttribs,
+					nsmap=self.NS_MAP
+					)
+				add_pbcore_subelements(self,top,mappedSubelements,mdValue)
+
+	return True
 
 def to_string(self):
 	self._string = ET.tostring(self.descriptionRoot, pretty_print=True)
-	print(self._string.decode())
+	# print(self._string.decode())
+	return self._string.decode()
 
 def xml_to_file(self,outputPath):
 	with open(outputPath,'wb') as outXML:
